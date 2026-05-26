@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Змейка — классическая игра на HTML5</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a472a 0%, #0e2a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Courier New', 'Monaco', monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: #0f2819;
+            border-radius: 56px;
+            padding: 20px 24px 24px 24px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .game-panel {
+            background: #071a10;
+            border-radius: 32px;
+            padding: 20px;
+            box-shadow: inset 0 2px 5px #00000033, 0 8px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 24px;
+            box-shadow: 0 0 0 3px #5f9e6e, 0 0 0 6px #2c5a3b;
+            background-color: #1d3b2a;
+            cursor: pointer;
+        }
+
+        .info-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 18px;
+            margin-bottom: 12px;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 0 8px;
+        }
+
+        .score-box {
+            background: #010e07;
+            padding: 8px 20px;
+            border-radius: 100px;
+            box-shadow: inset 0 1px 3px #6effa3, 0 5px 8px black;
+            backdrop-filter: blur(2px);
+        }
+
+        .score-label {
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #bef5cf;
+            text-shadow: 0 1px 0 #1e4a2a;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-left: 12px;
+            color: #f7ffb0;
+            text-shadow: 0 0 5px #8bc34a;
+            background: #0d2a1b;
+            padding: 0 12px;
+            border-radius: 60px;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .highscore-box {
+            background: #0f1f15;
+            border-radius: 100px;
+            padding: 8px 20px;
+            box-shadow: inset 0 1px 2px #bfe6cb, 0 5px 10px black;
+        }
+
+        .highscore-label {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        .highscore-value {
+            font-size: 1.7rem;
+            font-weight: bold;
+            margin-left: 12px;
+            color: #ffec9f;
+            background: #1e3a27;
+            padding: 0 12px;
+            border-radius: 50px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .restart-btn {
+            background: #e25822;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px 28px;
+            border-radius: 60px;
+            color: white;
+            text-shadow: 0 1px 1px black;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #7b2f0f;
+            transition: 0.07s linear;
+            letter-spacing: 1px;
+        }
+
+        .restart-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #7b2f0f;
+        }
+
+        .info-text {
+            background: #1f3d2c;
+            padding: 6px 18px;
+            border-radius: 80px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #c3f0d8;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .info-text kbd {
+            background: #00000066;
+            border-radius: 6px;
+            padding: 2px 8px;
+            margin: 0 3px;
+            font-weight: bold;
+            color: #f2ffb0;
+        }
+
+        @media (max-width: 550px) {
+            .game-container {
+                padding: 12px;
+            }
+            .score-value {
+                font-size: 1.5rem;
+                min-width: 55px;
+            }
+            .highscore-value {
+                font-size: 1.3rem;
+            }
+            .restart-btn {
+                padding: 6px 20px;
+                font-size: 1rem;
+            }
+            .info-text {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-container">
+        <div class="game-panel">
+            <canvas id="snakeCanvas" width="500" height="500"></canvas>
+            <div class="info-area">
+                <div class="score-box">
+                    <span class="score-label">🍎 СЧЁТ</span>
+                    <span class="score-value" id="scoreDisplay">0</span>
+                </div>
+                <div class="highscore-box">
+                    <span class="highscore-label">🏆 РЕКОРД</span>
+                    <span class="highscore-value" id="highScoreDisplay">0</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="restart-btn" id="restartButton">🔄 НОВАЯ ИГРА</button>
+                <div class="info-text">
+                    🎮 Управление: 
+                    <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd>
+                    &nbsp;&nbsp;|&nbsp; <kbd>R</kbd> — рестарт
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- НАСТРОЙКИ ИГРЫ ----------
+        const canvas = document.getElementById('snakeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Размеры сетки: 20x20, размер ячейки 25px (500/20 = 25)
+        const GRID_SIZE = 20;       // 20x20 клеток
+        const CELL_SIZE = canvas.width / GRID_SIZE; // 25px
+        
+        // Переменные игры
+        let snake = [];         // массив сегментов {x, y}
+        let direction = 'RIGHT';    // текущее направление
+        let nextDirection = 'RIGHT';
+        let food = { x: 12, y: 10 };
+        let score = 0;
+        let highScore = 0;
+        let gameActive = true;
+        let gameLoopId = null;
+        let gameEndMessage = null;   // 'GAME_OVER' или 'WIN'
+        
+        // DOM элементы
+        const scoreSpan = document.getElementById('scoreDisplay');
+        const highScoreSpan = document.getElementById('highScoreDisplay');
+        const restartBtn = document.getElementById('restartButton');
+        
+        // ---------- ЗАГРУЗКА РЕКОРДА ----------
+        function loadHighScore() {
+            const stored = localStorage.getItem('snakeHighScore');
+            if (stored !== null && !isNaN(parseInt(stored))) {
+                highScore = parseInt(stored);
+            } else {
+                highScore = 0;
+            }
+            highScoreSpan.innerText = highScore;
+        }
+        
+        function saveHighScore() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                highScoreSpan.innerText = highScore;
+            }
+        }
+        
+        function updateScoreUI() {
+            scoreSpan.innerText = score;
+            if (score > highScore) {
+                highScoreSpan.innerText = score;
+            }
+        }
+        
+        // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+        // Получить все свободные клетки (не занятые змеёй)
+        function getFreeCells() {
+            const occupied = new Set();
+            for (let seg of snake) {
+                occupied.add(`${seg.x},${seg.y}`);
+            }
+            const free = [];
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (!occupied.has(`${i},${j}`)) {
+                        free.push({ x: i, y: j });
+                    }
+                }
+            }
+            return free;
+        }
+        
+        // Сгенерировать еду в случайной свободной клетке. Возвращает true если успешно, false если нет свободных мест (победа)
+        function generateRandomFood() {
+            const freeCells = getFreeCells();
+            if (freeCells.length === 0) {
+                return false;   // нет свободных мест -> победа
+            }
+            const randIndex = Math.floor(Math.random() * freeCells.length);
+            food = { ...freeCells[randIndex] };
+            return true;
+        }
+        
+        // Инициализация новой игры (сброс всех параметров)
+        function initGame() {
+            // Начальная змейка из 4 сегментов в центре
+            const startX = Math.floor(GRID_SIZE / 2);
+            const startY = Math.floor(GRID_SIZE / 2);
+            snake = [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY },
+                { x: startX - 3, y: startY }
+            ];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            score = 0;
+            gameActive = true;
+            gameEndMessage = null;
+            updateScoreUI();
+            saveHighScore();     // обновим отображение рекорда (не перезаписываем, просто показываем текущий)
+            highScoreSpan.innerText = highScore;  // синхронизация
+            
+            // Генерируем еду (убеждаемся, что не на змейке)
+            const freeCells = getFreeCells();
+            if (freeCells.length > 0) {
+                const rand = Math.floor(Math.random() * freeCells.length);
+                food = { ...freeCells[rand] };
+            } else {
+                // на случай невозможного: если змейка сразу заполнила поле (4 клетки -> всегда есть место)
+                food = { x: 5, y: 5 };
+                if (snake.some(s => s.x === food.x && s.y === food.y)) food = { x: 15, y: 15 };
+            }
+            
+            drawCanvas();   // сразу рисуем стартовое поле
+        }
+        
+        // ---------- ОКОНЧАНИЕ ИГРЫ (ПОРАЖЕНИЕ) ----------
+        function gameOver() {
+            if (!gameActive) return;
+            gameActive = false;
+            gameEndMessage = 'GAME_OVER';
+            if (score > highScore) {
+                saveHighScore();
+            }
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+            drawCanvas();   // отображаем сообщение о поражении
+        }
+        
+        // ПОБЕДА (заполнили всё поле)
+        function gameWin() {
+            if (!gameActive) return;
+            gameActive = false;
+            gameEndMessage = 'WIN';
+            if (score > highScore) {
+                saveHighScore();
+            }
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+            drawCanvas();
+        }
+        
+        // ---------- ОСНОВНАЯ ЛОГИКА ДВИЖЕНИЯ ----------
+        function updateGame() {
+            if (!gameActive) return;
+            
+            // Обновляем направление (с проверкой на противоположное)
+            const newDir = nextDirection;
+            if ((newDir === 'RIGHT' && direction !== 'LEFT') ||
+                (newDir === 'LEFT' && direction !== 'RIGHT') ||
+                (newDir === 'UP' && direction !== 'DOWN') ||
+                (newDir === 'DOWN' && direction !== 'UP')) {
+                direction = newDir;
+            }
+            
+            // Вычисляем новую голову
+            let newHead = { ...snake[0] };
+            switch(direction) {
+                case 'RIGHT': newHead.x += 1; break;
+                case 'LEFT':  newHead.x -= 1; break;
+                case 'UP':    newHead.y -= 1; break;
+                case 'DOWN':  newHead.y += 1; break;
+                default: break;
+            }
+            
+            const willEat = (newHead.x === food.x && newHead.y === food.y);
+            
+            // Проверка столкновений
+            let collision = false;
+            
+            // Границы
+            if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+                collision = true;
+            } else {
+                if (willEat) {
+                    // Если едим — проверяем столкновение со всей змейкой (включая хвост, т.к. он не удалится)
+                    if (snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+                        collision = true;
+                    }
+                } else {
+                    // Не едим: столкновение с телом, исключая последний сегмент (хвост)
+                    const bodyWithoutTail = snake.slice(0, -1);
+                    if (bodyWithoutTail.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+                        collision = true;
+                    }
+                }
+            }
+            
+            if (collision) {
+                gameOver();
+                drawCanvas();
+                return;
+            }
+            
+            // ----- ВЫПОЛНЯЕМ ДВИЖЕНИЕ -----
+            snake.unshift(newHead);   // добавляем новую голову
+            
+            if (!willEat) {
+                snake.pop();          // удаляем хвост
+            } else {
+                // Съели еду: увеличиваем счет
+                score++;
+                updateScoreUI();
+                saveHighScore();       // обновляем рекорд, если побит
+                
+                // Генерируем новую еду
+                const success = generateRandomFood();
+                if (!success) {
+                    // Нет свободных клеток — ПОБЕДА!
+                    gameWin();
+                    drawCanvas();
+                    return;
+                }
+            }
+            
+            // Перерисовываем поле
+            drawCanvas();
+        }
+        
+        // ---------- ОТРИСОВКА ВСЕГО (СНЕЙК, ЕДА, ИНТЕРФЕЙС, СООБЩЕНИЯ) ----------
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Рисуем сетку (стильный полупрозрачный контур)
+            ctx.strokeStyle = '#2c6e47';
+            ctx.lineWidth = 0.8;
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * CELL_SIZE, 0);
+                ctx.lineTo(i * CELL_SIZE, canvas.height);
+                ctx.stroke();
+                ctx.moveTo(0, i * CELL_SIZE);
+                ctx.lineTo(canvas.width, i * CELL_SIZE);
+                ctx.stroke();
+            }
+            
+            // Рисуем еду (светящаяся ягодка)
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "#ffb347";
+            ctx.fillStyle = '#ff5252';
+            ctx.beginPath();
+            ctx.arc(food.x * CELL_SIZE + CELL_SIZE/2, food.y * CELL_SIZE + CELL_SIZE/2, CELL_SIZE * 0.38, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffff99';
+            ctx.beginPath();
+            ctx.arc(food.x * CELL_SIZE + CELL_SIZE/2 - 3, food.y * CELL_SIZE + CELL_SIZE/2 - 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffd966';
+            ctx.beginPath();
+            ctx.arc(food.x * CELL_SIZE + CELL_SIZE/2 + 2, food.y * CELL_SIZE + CELL_SIZE/2 - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Рисуем змейку с градиентом
+            for (let i = 0; i < snake.length; i++) {
+                const seg = snake[i];
+                const x = seg.x * CELL_SIZE;
+                const y = seg.y * CELL_SIZE;
+                const padding = i === 0 ? 2 : 3;
+                const radius = Math.max(4, CELL_SIZE * 0.2);
+                ctx.shadowBlur = i === 0 ? 5 : 2;
+                ctx.shadowColor = "#1e3a2a";
+                
+                // градиент для головы и тела
+                const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+                if (i === 0) {
+                    grad.addColorStop(0, '#8bdd6e');
+                    grad.addColorStop(1, '#4fae3a');
+                } else {
+                    grad.addColorStop(0, '#6ab84b');
+                    grad.addColorStop(1, '#348c24');
+                }
+                ctx.fillStyle = grad;
+                
+                ctx.beginPath();
+                ctx.roundRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4, radius);
+                ctx.fill();
+                
+                // Глазки для головы
+                if (i === 0) {
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.beginPath();
+                    ctx.arc(x + CELL_SIZE * 0.7, y + CELL_SIZE * 0.35, CELL_SIZE * 0.1, 0, 2 * Math.PI);
+                    ctx.arc(x + CELL_SIZE * 0.3, y + CELL_SIZE * 0.35, CELL_SIZE * 0.1, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.fillStyle = "#000000";
+                    ctx.beginPath();
+                    ctx.arc(x + CELL_SIZE * 0.68, y + CELL_SIZE * 0.33, CELL_SIZE * 0.05, 0, 2 * Math.PI);
+                    ctx.arc(x + CELL_SIZE * 0.28, y + CELL_SIZE * 0.33, CELL_SIZE * 0.05, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            ctx.shadowBlur = 0;
+            
+            // Отрисовка сообщений Game Over / Победа
+            if (!gameActive) {
+                ctx.font = `bold ${Math.floor(CELL_SIZE * 1.8)}px "Segoe UI", "Courier New", monospace`;
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = "rgba(0,0,0,0.75)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = gameEndMessage === 'WIN' ? "#FFD966" : "#FFB347";
+                ctx.font = `bold ${CELL_SIZE * 1.6}px monospace`;
+                ctx.shadowColor = "black";
+                ctx.shadowBlur = 6;
+                let msg = gameEndMessage === 'WIN' ? "🎉 ПОБЕДА! 🎉" : "💀 ИГРА ОКОНЧЕНА 💀";
+                let msg2 = gameEndMessage === 'WIN' ? "Вы заполнили поле!" : "Нажмите «НОВАЯ ИГРА»";
+                ctx.fillStyle = "#FFF5CF";
+                ctx.fillText(msg, canvas.width/2 - ctx.measureText(msg).width/2, canvas.height/2 - 20);
+                ctx.font = `bold ${CELL_SIZE * 1}px monospace`;
+                ctx.fillStyle = "#FFE0A3";
+                ctx.fillText(msg2, canvas.width/2 - ctx.measureText(msg2).width/2, canvas.height/2 + 35);
+                ctx.shadowBlur = 0;
+            }
+            
+            // Доп. отрисовка счётчика в углу на канвасе (для эффекта)
+            ctx.font = `bold ${CELL_SIZE * 1.2}px "Courier New"`;
+            ctx.fillStyle = "#E9FFC7";
+            ctx.shadowBlur = 2;
+            ctx.fillText(`🍎 ${score}`, 12, 38);
+        }
+        
+        // polyfill для roundRect
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x+r, y);
+                this.lineTo(x+w-r, y);
+                this.quadraticCurveTo(x+w, y, x+w, y+r);
+                this.lineTo(x+w, y+h-r);
+                this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+                this.lineTo(x+r, y+h);
+                this.quadraticCurveTo(x, y+h, x, y+h-r);
+                this.lineTo(x, y+r);
+                this.quadraticCurveTo(x, y, x+r, y);
+                return this;
+            };
+        }
+        
+        // ---------- УПРАВЛЕНИЕ ЗМЕЙКОЙ (КЛАВИАТУРА) ----------
+        function handleKeydown(e) {
+            const key = e.key;
+            // стрелки
+            let newDir = null;
+            if (key === 'ArrowUp') newDir = 'UP';
+            else if (key === 'ArrowDown') newDir = 'DOWN';
+            else if (key === 'ArrowLeft') newDir = 'LEFT';
+            else if (key === 'ArrowRight') newDir = 'RIGHT';
+            
+            if (newDir) {
+                e.preventDefault();
+                if (gameActive) {
+                    // запрещаем движение в противоположную сторону
+                    if ((newDir === 'UP' && direction === 'DOWN') ||
+                        (newDir === 'DOWN' && direction === 'UP') ||
+                        (newDir === 'LEFT' && direction === 'RIGHT') ||
+                        (newDir === 'RIGHT' && direction === 'LEFT')) {
+                        return;
+                    }
+                    nextDirection = newDir;
+                }
+            }
+            
+            // Перезапуск по клавише R или r
+            if (key === 'r' || key === 'R') {
+                e.preventDefault();
+                restartGame();
+            }
+        }
+        
+        // ---------- ПЕРЕЗАПУСК ИГРЫ ----------
+        function restartGame() {
+            // Останавливаем текущий цикл, если есть
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+            // Сброс состояния
+            initGame();
+            gameActive = true;
+            gameEndMessage = null;
+            // Запускаем новый игровой цикл
+            startGameLoop();
+            drawCanvas();
+        }
+        
+        // Запуск игрового таймера (классическая скорость ~ 140ms)
+        function startGameLoop() {
+            if (gameLoopId) clearInterval(gameLoopId);
+            gameLoopId = setInterval(() => {
+                updateGame();
+            }, 140);   // комфортная скорость
+        }
+        
+        // ---------- ИНИЦИАЛИЗАЦИЯ И ЗАПУСК ----------
+        function initAndStart() {
+            loadHighScore();
+            initGame();
+            gameActive = true;
+            gameEndMessage = null;
+            startGameLoop();
+            drawCanvas();
+        }
+        
+        // Добавляем слушатели событий
+        window.addEventListener('load', () => {
+            initAndStart();
+            window.addEventListener('keydown', handleKeydown);
+            restartBtn.addEventListener('click', () => {
+                restartGame();
+            });
+            // Блокировка контекстного меню на канвасе для удобства
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        });
+        
+        // При перезагрузке страницы корректно чистим интервал (на всякий)
+        window.addEventListener('beforeunload', () => {
+            if (gameLoopId) clearInterval(gameLoopId);
+        });
+        
+    })();
+</script>
+</body>
+</html>
